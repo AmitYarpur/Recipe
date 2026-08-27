@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d9533d">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Recipe">
+<title>Recipe</title>
+<script>
+  if (localStorage.getItem('recipe_theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- Screen: browse / search / filter -->
+    <div id="browse-screen" class="screen active">
+      <div class="top-bar">
+        <div class="brand">
+          <span class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a3 3 0 0 0 3 3v8"/><path d="M6 3v6"/><path d="M9 3v6"/><path d="M18 3c-1.7 0-3 2-3 5s1.3 5 3 5v9"/></svg>
+          </span>
+          <h1 class="brand-title">Recipe</h1>
+        </div>
+        <button class="icon-btn" id="theme-toggle-btn" aria-label="החלף מצב תצוגה">
+          <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+        </button>
+      </div>
+
+      <div class="search-row">
+        <input class="search-input" id="search-input" type="text" placeholder="חיפוש מתכון לפי שם...">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+
+      <div class="chip-row" id="chip-row"></div>
+
+      <div id="recipe-list" class="recipe-list"></div>
+
+      <div id="empty-state" class="empty-state hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a3 3 0 0 0 3 3v8"/><path d="M6 3v6"/><path d="M9 3v6"/><path d="M18 3c-1.7 0-3 2-3 5s1.3 5 3 5v9"/></svg>
+        <p id="empty-state-text">עדיין אין מתכונים. הוסיפו את המתכון הראשון!</p>
+      </div>
+    </div>
+
+    <!-- Screen: add a recipe -->
+    <div id="add-screen" class="screen">
+      <div class="top-bar">
+        <button class="icon-btn" id="add-back-btn" aria-label="חזרה">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <h2 class="headline" style="margin:0;">מתכון חדש</h2>
+        <span style="width:38px;"></span>
+      </div>
+
+      <div class="card">
+        <div class="field-group">
+          <label class="field-label" for="recipe-link">קישור מהרשת החברתית</label>
+          <input class="text-input" id="recipe-link" type="url" placeholder="https://...">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="recipe-name">שם המתכון</label>
+          <input class="text-input" id="recipe-name" type="text" placeholder="לדוגמה: פסטה ברוטב שמנת">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="recipe-category">קטגוריה</label>
+          <select class="select-input" id="recipe-category">
+            <option value="" disabled selected>בחרו קטגוריה</option>
+          </select>
+        </div>
+
+        <div class="error" id="add-error"></div>
+
+        <button class="btn-primary" id="save-recipe-btn">שמור מתכון</button>
+      </div>
+    </div>
+
+    <div class="fab" id="fab">
+      <button class="fab-btn" id="fab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        מתכון חדש
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Recipe detail bottom sheet -->
+  <div class="sheet-backdrop" id="detail-backdrop">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <p class="sheet-title" id="detail-name"></p>
+      <div class="recipe-meta" id="detail-meta" style="margin-top:6px;"></div>
+      <div class="sheet-actions">
+        <button class="btn-primary" id="detail-open-btn">פתח קישור</button>
+        <button class="btn-ghost btn-danger" id="detail-delete-btn">מחק מתכון</button>
+        <button class="btn-ghost" id="detail-close-btn">סגור</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { CATEGORIES, addRecipe, getRecipes, deleteRecipe } from './db.js';
+
+    const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', other: 'קישור' };
+
+    const PLATFORM_ICONS = {
+      youtube: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l5 3-5 3V9Z" fill="currentColor" stroke="none"/></svg>',
+      instagram: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>',
+      tiktok: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v10.5a3.5 3.5 0 1 1-3-3.46"/><path d="M14 3c0 3 2 5 5 5"/></svg>',
+      other: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg>'
+    };
+
+    let allRecipes = [];
+    let currentCategory = 'הכל';
+    let currentSearch = '';
+    let activeRecipe = null;
+
+    // --- theme ---------------------------------------------------------
+    function applyThemeIcon() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.getElementById('theme-icon').innerHTML = dark
+        ? '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>'
+        : '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>';
+    }
+    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('recipe_theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('recipe_theme', 'dark');
+      }
+      applyThemeIcon();
+    });
+    applyThemeIcon();
+
+    // --- toast -----------------------------------------------------------
+    let toastTimer;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+    }
+
+    // --- category chips + select options ---------------------------------
+    const chipRow = document.getElementById('chip-row');
+    ['הכל', ...CATEGORIES].forEach(cat => {
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (cat === currentCategory ? ' active' : '');
+      chip.textContent = cat;
+      chip.addEventListener('click', () => {
+        currentCategory = cat;
+        [...chipRow.children].forEach(c => c.classList.toggle('active', c.textContent === cat));
+        renderList();
+      });
+      chipRow.appendChild(chip);
+    });
+
+    const categorySelect = document.getElementById('recipe-category');
+    CATEGORIES.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      categorySelect.appendChild(opt);
+    });
+
+    // --- screens -----------------------------------------------------------
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.getElementById('fab').classList.toggle('hidden', id !== 'browse-screen');
+    }
+
+    document.getElementById('fab-btn').addEventListener('click', () => {
+      document.getElementById('recipe-link').value = '';
+      document.getElementById('recipe-name').value = '';
+      categorySelect.selectedIndex = 0;
+      document.getElementById('add-error').textContent = '';
+      showScreen('add-screen');
+    });
+    document.getElementById('add-back-btn').addEventListener('click', () => showScreen('browse-screen'));
+
+    // --- list rendering ------------------------------------------------------
+    function renderList() {
+      const list = document.getElementById('recipe-list');
+      const empty = document.getElementById('empty-state');
+      const search = currentSearch.trim().toLowerCase();
+
+      const filtered = allRecipes.filter(r => {
+        const matchesCategory = currentCategory === 'הכל' || r.category === currentCategory;
+        const matchesSearch = !search || r.name.toLowerCase().includes(search);
+        return matchesCategory && matchesSearch;
+      });
+
+      list.innerHTML = '';
+      if (filtered.length === 0) {
+        empty.classList.remove('hidden');
+        document.getElementById('empty-state-text').textContent = allRecipes.length === 0
+          ? 'עדיין אין מתכונים. הוסיפו את המתכון הראשון!'
+          : 'לא נמצאו מתכונים תואמים.';
+        return;
+      }
+      empty.classList.add('hidden');
+
+      filtered.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+
+        const thumb = document.createElement('div');
+        thumb.className = 'recipe-thumb';
+        if (r.thumbnailUrl) {
+          thumb.style.backgroundImage = `url('${r.thumbnailUrl}')`;
+          thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
+        } else {
+          thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
+        }
+
+        const info = document.createElement('div');
+        info.className = 'recipe-info';
+        info.innerHTML = `
+          <p class="recipe-name">${escapeHtml(r.name)}</p>
+          <div class="recipe-meta">
+            <span class="badge badge-accent">${escapeHtml(r.category)}</span>
+            <span class="platform-tag">${PLATFORM_LABELS[r.platform] || PLATFORM_LABELS.other}</span>
+          </div>
+        `;
+
+        card.appendChild(thumb);
+        card.appendChild(info);
+        card.addEventListener('click', () => openDetail(r));
+        list.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    document.getElementById('search-input').addEventListener('input', e => {
+      currentSearch = e.target.value;
+      renderList();
+    });
+
+    // --- detail sheet -------------------------------------------------------
+    function openDetail(recipe) {
+      activeRecipe = recipe;
+      document.getElementById('detail-name').textContent = recipe.name;
+      document.getElementById('detail-meta').innerHTML = `
+        <span class="badge badge-accent">${escapeHtml(recipe.category)}</span>
+        <span class="platform-tag">${PLATFORM_LABELS[recipe.platform] || PLATFORM_LABELS.other}</span>
+      `;
+      document.getElementById('detail-backdrop').classList.add('active');
+    }
+    function closeDetail() {
+      document.getElementById('detail-backdrop').classList.remove('active');
+      activeRecipe = null;
+    }
+    document.getElementById('detail-close-btn').addEventListener('click', closeDetail);
+    document.getElementById('detail-backdrop').addEventListener('click', e => {
+      if (e.target.id === 'detail-backdrop') closeDetail();
+    });
+    document.getElementById('detail-open-btn').addEventListener('click', () => {
+      if (activeRecipe) window.open(activeRecipe.link, '_blank', 'noopener');
+    });
+    document.getElementById('detail-delete-btn').addEventListener('click', async () => {
+      if (!activeRecipe) return;
+      if (!confirm(`למחוק את "${activeRecipe.name}"?`)) return;
+      const id = activeRecipe.id;
+      try {
+        await deleteRecipe(id);
+        allRecipes = allRecipes.filter(r => r.id !== id);
+        closeDetail();
+        renderList();
+        showToast('המתכון נמחק');
+      } catch (e) {
+        showToast(e.message || 'שגיאה במחיקה');
+      }
+    });
+
+    // --- add recipe -----------------------------------------------------------
+    document.getElementById('save-recipe-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('save-recipe-btn');
+      const errorEl = document.getElementById('add-error');
+      const values = {
+        link: document.getElementById('recipe-link').value,
+        name: document.getElementById('recipe-name').value,
+        category: categorySelect.value
+      };
+      errorEl.textContent = '';
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.innerHTML = '<span class="spinner"></span>';
+      try {
+        await addRecipe(values);
+        showScreen('browse-screen');
+        showToast('המתכון נוסף בהצלחה');
+        await loadRecipes();
+      } catch (e) {
+        errorEl.textContent = e.message || 'שגיאה בשמירת המתכון.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    // --- initial load -----------------------------------------------------------
+    async function loadRecipes() {
+      try {
+        allRecipes = await getRecipes();
+        renderList();
+      } catch (e) {
+        document.getElementById('empty-state').classList.remove('hidden');
+        document.getElementById('empty-state-text').textContent = e.message || 'שגיאה בטעינת המתכונים.';
+      }
+    }
+
+    loadRecipes();
+  </script>
+</body>
+</html>

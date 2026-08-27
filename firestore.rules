@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Shared, no-login recipe book: every visitor reads the same list and
+    // can add/remove from it (matches the app's "shared cookbook, no
+    // accounts" design). Anyone with the app URL can write here - there is
+    // no per-user identity to check against. Field checks below just stop
+    // malformed/oversized documents, not malicious ones.
+    match /recipes/{recipeId} {
+      allow read: if true;
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() < 200
+                    && request.resource.data.link is string
+                    && request.resource.data.link.matches('^https?://.*')
+                    && request.resource.data.category in
+                       ['עיקריות', 'סלטים', 'קינוחים', 'מרקים', 'מאפים', 'ארוחת בוקר', 'משקאות']
+                    && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'other'];
+      allow delete: if true;
+    }
+  }
+}

@@ -1,0 +1,561 @@
+/* Shared design system for the Recipe app — "Tomato & Saffron"
+   Warm tomato-red accent fading to saffron amber, echoing Helth's card
+   language (glass cards, soft shadows, pill buttons) but with its own
+   food-forward palette. RTL-first: the page is always Hebrew. */
+
+:root {
+  --bg-1: #fffaf6;
+  --bg-2: #fff3ec;
+  --bg-3: #ffffff;
+  --page-base: #fff8f4;
+
+  --accent-1: #d9533d;   /* tomato — primary: CTAs, active states */
+  --accent-2: #f4a261;   /* saffron amber */
+  --accent-gradient: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  --accent-green: #6a9a55;    /* fresh herb — secondary: badges, success */
+  --accent-green-2: #8bbf72;
+
+  --surface: #fff3ec;
+  --surface-solid: #ffffff;
+  --surface-wash: #ffffff;
+  --surface-wash-strong: #fbe8dd;
+  --field-bg: #ffffff;
+  --ghost-btn-bg: rgba(89, 43, 25, 0.06);
+  --ghost-btn-bg-active: rgba(89, 43, 25, 0.1);
+  --border-hairline: rgba(89, 43, 25, 0.1);
+
+  --text-primary: #2c1c14;
+  --text-secondary: #6b5347;
+  --text-muted: #a4917f;
+  --text-on-accent: #ffffff;
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+
+  --shadow-card: 0 16px 32px -18px rgba(89, 43, 25, 0.22);
+  --shadow-soft: 0 6px 16px -8px rgba(89, 43, 25, 0.18);
+  --shadow-accent-glow: 0 10px 20px -8px rgba(217, 83, 61, 0.35);
+}
+
+:root[data-theme="dark"] {
+  --bg-1: #1c130f;
+  --bg-2: #170f0c;
+  --bg-3: #201613;
+  --page-base: #130d0a;
+
+  --accent-1: #ff7a5c;
+  --accent-2: #ffb677;
+  --accent-green: #8bc471;
+  --accent-green-2: #a6d98f;
+
+  --surface: #221712;
+  --surface-solid: #271b15;
+  --surface-wash: #271b16;
+  --surface-wash-strong: #32221a;
+  --field-bg: #271b16;
+  --ghost-btn-bg: rgba(255, 255, 255, 0.06);
+  --ghost-btn-bg-active: rgba(255, 255, 255, 0.12);
+  --border-hairline: rgba(255, 255, 255, 0.08);
+
+  --text-primary: #fdf3ee;
+  --text-secondary: #e6d3c8;
+  --text-muted: #9c8779;
+  --text-on-accent: #201613;
+
+  --shadow-card: 0 20px 44px -18px rgba(0, 0, 0, 0.65);
+  --shadow-soft: 0 10px 22px -10px rgba(0, 0, 0, 0.55);
+  --shadow-accent-glow: 0 0 0 1px rgba(255, 122, 92, 0.35), 0 0 26px rgba(255, 122, 92, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 85% 8%, var(--bg-2) 0%, transparent 45%),
+    radial-gradient(circle at 10% 15%, var(--bg-1) 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, var(--bg-2) 0%, transparent 55%),
+    var(--page-base);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease;
+}
+
+.page {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 18px 16px 96px;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* --- Top bar ------------------------------------------------------------ */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-top: 6px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+  flex-shrink: 0;
+}
+
+.brand-icon svg { width: 20px; height: 20px; stroke: #fff; }
+
+.brand-title {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-solid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-soft);
+}
+
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* --- Cards --------------------------------------------------------------- */
+.card {
+  width: 100%;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 30px 24px;
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent-1);
+  margin: 0 0 8px;
+}
+
+h1.headline {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+
+h2.headline {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 18px;
+}
+
+p.subtext {
+  font-size: 14.5px;
+  color: var(--text-secondary);
+  margin: 0 0 22px;
+  line-height: 1.5;
+}
+
+/* --- Search + filters ----------------------------------------------------- */
+.search-row {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.search-row svg {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 13px 44px 13px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  background: var(--field-bg);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+}
+
+.search-input:focus { border-color: var(--accent-1); }
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 18px;
+  scrollbar-width: none;
+}
+
+.chip-row::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-solid);
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-accent-glow);
+}
+
+/* --- Recipe list ----------------------------------------------------------- */
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: var(--surface-solid);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.recipe-thumb {
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+  background: var(--surface-wash-strong);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  position: relative;
+}
+
+.recipe-thumb .play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(0deg, rgba(0,0,0,0.28), transparent 55%);
+}
+
+.recipe-thumb .play-badge svg {
+  width: 26px;
+  height: 26px;
+  fill: #fff;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+}
+
+.recipe-thumb svg.placeholder-icon { width: 30px; height: 30px; }
+
+.recipe-info {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.recipe-name {
+  font-size: 15.5px;
+  font-weight: 700;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--surface-wash-strong);
+  color: var(--text-secondary);
+}
+
+.badge.badge-accent {
+  background: rgba(217, 83, 61, 0.12);
+  color: var(--accent-1);
+}
+
+.platform-tag {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state svg {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+}
+
+.empty-state p { margin: 0; font-size: 14.5px; }
+
+/* --- Buttons --------------------------------------------------------------- */
+button { font-family: inherit; cursor: pointer; }
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent-gradient);
+  box-shadow: var(--shadow-accent-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--ghost-btn-bg);
+}
+
+.btn-ghost:active { background: var(--ghost-btn-bg-active); }
+
+.btn-danger {
+  color: #d9533d;
+}
+
+.fab {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 448px;
+  padding: 0 16px;
+  z-index: 20;
+}
+
+.fab-btn {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent-gradient);
+  box-shadow: 0 14px 30px -10px rgba(217, 83, 61, 0.5);
+}
+
+.fab-btn svg { width: 20px; height: 20px; }
+
+/* --- Form fields ----------------------------------------------------------- */
+.field-group { margin-bottom: 16px; }
+
+.field-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 7px;
+}
+
+.text-input, .select-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  background: var(--field-bg);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  appearance: none;
+}
+
+.text-input:focus, .select-input:focus { border-color: var(--accent-1); }
+
+.select-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b5347' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 14px center;
+  background-size: 16px;
+  padding-left: 38px;
+}
+
+.error {
+  color: #d9533d;
+  font-size: 13.5px;
+  min-height: 18px;
+}
+
+/* --- Modal / bottom sheet ---------------------------------------------------- */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 13, 8, 0.5);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 40;
+}
+
+.sheet-backdrop.active { display: flex; }
+
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface-solid);
+  border-radius: 24px 24px 0 0;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.25);
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-hairline);
+  margin: 6px auto 16px;
+}
+
+.sheet-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 4px;
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* --- Toast ------------------------------------------------------------------ */
+.toast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-140%);
+  background: var(--text-primary);
+  color: var(--bg-1);
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+  z-index: 60;
+  transition: transform 0.25s ease;
+  white-space: nowrap;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* --- Utility ------------------------------------------------------------------ */
+.hidden { display: none !important; }
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
