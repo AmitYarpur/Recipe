@@ -15,6 +15,14 @@ service cloud.firestore {
                     && request.resource.data.category in
                        ['עיקריות', 'סלטים', 'קינוחים', 'מרקים', 'מאפים', 'משקאות']
                     && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'other', 'manual']
+                    // Optional photo, stored inline as a base64 data URL
+                    // (no Storage bucket - that needs the paid Blaze plan).
+                    // Capped well under Firestore's 1MiB document limit;
+                    // the client is expected to compress before writing.
+                    && (!('photoDataUrl' in request.resource.data)
+                        || request.resource.data.photoDataUrl == null
+                        || (request.resource.data.photoDataUrl is string
+                            && request.resource.data.photoDataUrl.size() < 900000))
                     && (
                       // Manual recipe: typed in by hand, no external link -
                       // needs its own ingredients/steps instead.

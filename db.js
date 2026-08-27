@@ -157,8 +157,16 @@ async function buildRecipeFields(values) {
   return { name, link, category, platform, thumbnailUrl };
 }
 
+// values.photo: undefined = leave untouched (edit only), null = no/removed
+// photo, string = a new compressed data URL to store. There is no Storage
+// bucket behind this (that needs the paid Blaze plan) - the photo lives as
+// a base64 data URL directly on the recipe document, which is why it's
+// resized/compressed client-side before it ever reaches here (see
+// compressImageToDataUrl in index.html) and why Firestore rules cap its size.
 export async function addRecipe(values) {
   const fields = await buildRecipeFields(values);
+  fields.photoDataUrl = typeof values.photo === "string" ? values.photo : null;
+
   await withTimeout(addDoc(recipesCollection(), {
     ...fields,
     createdAt: serverTimestamp(),
@@ -168,12 +176,21 @@ export async function addRecipe(values) {
 
 // Overwrites an existing recipe's content. Supports switching between link
 // and manual mode: whichever fields don't apply to the new mode are removed
-// with deleteField() rather than left stale from the old mode.
+// with deleteField() rather than left stale from the old mode. Same
+// deleteField() treatment for a removed photo; an untouched photo (the
+// common case) is left out of the update entirely so its ~100KB+ string
+// isn't rewritten on every unrelated edit.
 export async function updateRecipe(id, values) {
   const fields = await buildRecipeFields(values);
   const clearFields = values.mode === "manual"
     ? { link: deleteField() }
     : { ingredients: deleteField(), instructions: deleteField() };
+
+  if (values.photo === null) {
+    fields.photoDataUrl = deleteField();
+  } else if (typeof values.photo === "string") {
+    fields.photoDataUrl = values.photo;
+  }
 
   await withTimeout(updateDoc(doc(db, "recipes", id), {
     ...fields,
@@ -182,8 +199,9 @@ export async function updateRecipe(id, values) {
 }
 
 // Returns one row per recipe: { id, name, link, category, platform,
-// thumbnailUrl, ingredients, instructions, createdAt: Date }, newest first.
-// link/ingredients/instructions are only populated for the relevant mode.
+// thumbnailUrl, photoDataUrl, ingredients, instructions, createdAt: Date },
+// newest first. link/ingredients/instructions are only populated for the
+// relevant mode; photoDataUrl is null unless a photo was uploaded.
 export async function getRecipes() {
   const q = query(recipesCollection(), orderBy("createdAt", "desc"));
   const snap = await withTimeout(getDocs(q), "recipe:list");
@@ -197,6 +215,7 @@ export async function getRecipes() {
       category: data.category,
       platform: data.platform || "other",
       thumbnailUrl: data.thumbnailUrl || null,
+      photoDataUrl: data.photoDataUrl || null,
       ingredients: data.ingredients || null,
       instructions: data.instructions || null,
       createdAt: data.createdAt ? data.createdAt.toDate() : new Date(data.createdAtLocal)

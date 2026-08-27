@@ -90,6 +90,19 @@
           </select>
         </div>
 
+        <div class="field-group">
+          <label class="field-label">תמונה (אופציונלי)</label>
+          <div id="photo-preview-wrap" class="hidden">
+            <img id="photo-preview" class="photo-preview" alt="">
+            <button type="button" class="btn-ghost btn-danger" id="remove-photo-btn">הסר תמונה</button>
+          </div>
+          <label class="photo-upload-btn" id="photo-upload-label">
+            <input type="file" id="photo-input" accept="image/*" class="visually-hidden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="9" cy="11" r="2.2"/><path d="m21 16-5-4-8 7"/></svg>
+            הוסף תמונה
+          </label>
+        </div>
+
         <div id="manual-fields" class="hidden">
           <div class="field-group">
             <label class="field-label">מצרכים</label>
@@ -129,6 +142,7 @@
   <div class="sheet-backdrop" id="detail-backdrop">
     <div class="sheet">
       <div class="sheet-handle"></div>
+      <img id="detail-photo" class="detail-photo hidden" alt="">
       <p class="sheet-title" id="detail-name"></p>
       <div class="recipe-meta" id="detail-meta" style="margin-top:6px;"></div>
 
@@ -271,6 +285,92 @@
     document.getElementById('mode-link-btn').addEventListener('click', () => setAddMode('link'));
     document.getElementById('mode-manual-btn').addEventListener('click', () => setAddMode('manual'));
 
+    // --- photo upload ----------------------------------------------------------
+    // undefined = no change (edit only, leaves any existing photo alone),
+    // null = no photo / explicitly removed, string = new data URL to save.
+    let selectedPhoto = null;
+    const MAX_PHOTO_CHARS = 900000; // stays well under Firestore's 1MiB document cap
+
+    function showPhotoPreview(src) {
+      const wrap = document.getElementById('photo-preview-wrap');
+      document.getElementById('photo-preview').src = src;
+      wrap.classList.remove('hidden');
+      document.getElementById('photo-upload-label').classList.add('hidden');
+    }
+    function hidePhotoPreview() {
+      document.getElementById('photo-preview-wrap').classList.add('hidden');
+      document.getElementById('photo-upload-label').classList.remove('hidden');
+      document.getElementById('photo-preview').src = '';
+    }
+
+    function loadImage(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('קובץ התמונה פגום או לא נתמך.'));
+        img.src = dataUrl;
+      });
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('לא ניתן לקרוא את קובץ התמונה.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function drawResized(img, maxDim, quality) {
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+      else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
+    // Resizes/compresses client-side so the result comfortably fits inside a
+    // single Firestore document (no Storage bucket behind this - see db.js).
+    // Retries at lower quality/dimensions if a large source photo still
+    // doesn't fit, rather than failing outright.
+    async function compressImageFile(file) {
+      if (file.size > 15 * 1024 * 1024) throw new Error('קובץ התמונה גדול מדי (מעל 15MB).');
+      const raw = await readFileAsDataUrl(file);
+      const img = await loadImage(raw);
+
+      const attempts = [[900, 0.7], [900, 0.5], [640, 0.5], [480, 0.4]];
+      let result = null;
+      for (const [maxDim, quality] of attempts) {
+        result = drawResized(img, maxDim, quality);
+        if (result.length <= MAX_PHOTO_CHARS) return result;
+      }
+      throw new Error('התמונה גדולה מדי גם לאחר דחיסה. נסו תמונה אחרת.');
+    }
+
+    document.getElementById('photo-input').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const errorEl = document.getElementById('add-error');
+      errorEl.textContent = '';
+      try {
+        const dataUrl = await compressImageFile(file);
+        selectedPhoto = dataUrl;
+        showPhotoPreview(dataUrl);
+      } catch (err) {
+        errorEl.textContent = err.message || 'שגיאה בטעינת התמונה.';
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    document.getElementById('remove-photo-btn').addEventListener('click', () => {
+      selectedPhoto = null;
+      hidePhotoPreview();
+    });
+
     // --- dynamic ingredient / instruction rows --------------------------------
     function addDynamicRow(containerId, placeholder) {
       const container = document.getElementById(containerId);
@@ -333,6 +433,8 @@
       setAddMode('link');
       resetDynamicList('ingredients-list', 'לדוגמה: 2 כוסות קמח');
       resetDynamicList('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים');
+      selectedPhoto = null;
+      hidePhotoPreview();
       showScreen('add-screen');
     });
     document.getElementById('add-back-btn').addEventListener('click', () => showScreen('browse-screen'));
@@ -346,6 +448,16 @@
 
       document.getElementById('recipe-name').value = recipe.name;
       categorySelect.value = recipe.category;
+
+      // undefined = keep whatever photo the recipe already has unless the
+      // user actively changes it (see the photo-input/remove-photo-btn
+      // handlers, which overwrite this with a string or null).
+      selectedPhoto = undefined;
+      if (recipe.photoDataUrl) {
+        showPhotoPreview(recipe.photoDataUrl);
+      } else {
+        hidePhotoPreview();
+      }
 
       if (recipe.platform === 'manual') {
         setAddMode('manual');
@@ -390,8 +502,12 @@
 
         const thumb = document.createElement('div');
         thumb.className = 'recipe-thumb';
-        if (r.thumbnailUrl) {
-          thumb.style.backgroundImage = `url('${r.thumbnailUrl}')`;
+        if (r.photoDataUrl) {
+          // A personal photo of the finished dish - shown as-is, no play
+          // icon (that's reserved for the video's own thumbnail below).
+          thumb.style.backgroundImage = `url("${r.photoDataUrl}")`;
+        } else if (r.thumbnailUrl) {
+          thumb.style.backgroundImage = `url("${r.thumbnailUrl}")`;
           thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
         } else if (r.platform === 'manual') {
           thumb.innerHTML = PLATFORM_ICONS.manual + '<span class="thumb-manual-label">מתכון פרטי</span>';
@@ -446,6 +562,16 @@
         <span class="badge badge-accent">${escapeHtml(recipe.category)}</span>
         <span class="platform-tag">${PLATFORM_LABELS[recipe.platform] || PLATFORM_LABELS.other}</span>
       `;
+
+      const photoEl = document.getElementById('detail-photo');
+      const detailImage = recipe.photoDataUrl || recipe.thumbnailUrl;
+      if (detailImage) {
+        photoEl.src = detailImage;
+        photoEl.classList.remove('hidden');
+      } else {
+        photoEl.classList.add('hidden');
+        photoEl.src = '';
+      }
 
       const isManual = recipe.platform === 'manual';
       document.getElementById('detail-open-btn').classList.toggle('hidden', isManual);
@@ -504,6 +630,7 @@
             name: document.getElementById('recipe-name').value,
             category: categorySelect.value
           };
+      values.photo = selectedPhoto;
       errorEl.textContent = '';
       btn.disabled = true;
       const originalText = btn.textContent;
