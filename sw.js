@@ -5,7 +5,7 @@
 // connection to actually read/write recipes; this only makes the UI itself
 // load fast and stay viewable if the network briefly drops.
 
-const CACHE_NAME = 'recipe-static-v2';
+const CACHE_NAME = 'recipe-static-v1';
 
 const PRECACHE_URLS = [
   './',
