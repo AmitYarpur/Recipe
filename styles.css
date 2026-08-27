@@ -36,6 +36,7 @@
   --shadow-card: 0 16px 32px -18px rgba(89, 43, 25, 0.22);
   --shadow-soft: 0 6px 16px -8px rgba(89, 43, 25, 0.18);
   --shadow-accent-glow: 0 10px 20px -8px rgba(217, 83, 61, 0.35);
+  --scroll-fade-shadow: rgba(44, 28, 20, 0.16);
 }
 
 :root[data-theme="dark"] {
@@ -66,6 +67,7 @@
   --shadow-card: 0 20px 44px -18px rgba(0, 0, 0, 0.65);
   --shadow-soft: 0 10px 22px -10px rgba(0, 0, 0, 0.55);
   --shadow-accent-glow: 0 0 0 1px rgba(255, 122, 92, 0.35), 0 0 26px rgba(255, 122, 92, 0.4);
+  --scroll-fade-shadow: rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -223,16 +225,45 @@ p.subtext {
 
 .search-input:focus { border-color: var(--accent-1); }
 
+.chip-row-wrap {
+  position: relative;
+  margin-bottom: 18px;
+}
+
 .chip-row {
   display: flex;
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
-  margin-bottom: 18px;
   scrollbar-width: none;
 }
 
 .chip-row::-webkit-scrollbar { display: none; }
+
+/* Soft gradient hint on whichever edge still has chips scrolled out of
+   view - fades out once the row is scrolled all the way to that side, so
+   it never looks stuck open when there's nothing left to reveal. */
+.chip-fade {
+  position: absolute;
+  top: 0;
+  bottom: 4px;
+  width: 32px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chip-fade.visible { opacity: 1; }
+
+.chip-fade-left {
+  left: 0;
+  background: linear-gradient(to left, transparent, var(--scroll-fade-shadow));
+}
+
+.chip-fade-right {
+  right: 0;
+  background: linear-gradient(to right, transparent, var(--scroll-fade-shadow));
+}
 
 .chip {
   flex-shrink: 0;

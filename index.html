@@ -41,7 +41,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       </div>
 
-      <div class="chip-row" id="chip-row"></div>
+      <div class="chip-row-wrap">
+        <div class="chip-row" id="chip-row"></div>
+        <div class="chip-fade chip-fade-left" id="chip-fade-left"></div>
+        <div class="chip-fade chip-fade-right" id="chip-fade-right"></div>
+      </div>
 
       <div id="recipe-list" class="recipe-list"></div>
 
@@ -210,6 +214,34 @@
       });
       chipRow.appendChild(chip);
     });
+
+    // Uses each edge chip's own bounding box rather than chipRow.scrollLeft,
+    // since RTL scroll-position sign conventions differ across browsers -
+    // comparing element edges to the container edge works the same way
+    // everywhere and needs no per-browser special-casing.
+    function updateChipFades() {
+      const fadeLeft = document.getElementById('chip-fade-left');
+      const fadeRight = document.getElementById('chip-fade-right');
+      const first = chipRow.firstElementChild;
+      const last = chipRow.lastElementChild;
+      if (!first || !last) return;
+
+      const containerRect = chipRow.getBoundingClientRect();
+      const firstRect = first.getBoundingClientRect();
+      const lastRect = last.getBoundingClientRect();
+      const TOLERANCE = 2;
+
+      // First chip ("הכל") sits at the row's right edge at rest - if its
+      // right side is pushed past the container's right edge, we've
+      // scrolled away from the start and there's more to the right.
+      fadeRight.classList.toggle('visible', firstRect.right > containerRect.right + TOLERANCE);
+      // Last chip sits furthest left - if its left side hasn't reached the
+      // container's left edge yet, there's more still hidden that way.
+      fadeLeft.classList.toggle('visible', lastRect.left < containerRect.left - TOLERANCE);
+    }
+    chipRow.addEventListener('scroll', updateChipFades, { passive: true });
+    window.addEventListener('resize', updateChipFades);
+    updateChipFades();
 
     const categorySelect = document.getElementById('recipe-category');
     CATEGORIES.forEach(cat => {
