@@ -1,50 +1,10 @@
 # הפעלת האפליקציה Recipe
 
-האפליקציה מוכנה מבחינת קוד, אבל היא צריכה פרויקט Firebase משלה כדי לשמור
-את המתכונים (בלי זה מסך "מתכון חדש" ייכשל בשמירה). זה חד-פעמי.
+ההגדרה כבר בוצעה: פרויקט Firebase בשם `amit-recipe-d3532`, מסד נתונים
+Firestore, וחוקי האבטחה - כולם מוגדרים ופרוסים. `db.js` מכיל את
+הקונפיגורציה האמיתית. אין צורך בשום פעולה נוספת כדי שהאפליקציה תעבוד.
 
-## 1. יצירת פרויקט Firebase
-
-1. פתחו את [console.firebase.google.com](https://console.firebase.google.com) והתחברו עם חשבון Google.
-2. "Add project" → שם, למשל `recipe-amit` → אפשר לכבות Google Analytics (לא נדרש) → Create project.
-3. בתפריט הצד: **Build → Firestore Database → Create database** → מצב **Production mode** → בחרו region קרוב (למשל `europe-west1`) → Enable.
-
-## 2. חיבור אפליקציית ווב לפרויקט
-
-1. בעמוד הראשי של הפרויקט לחצו על סמל ה-`</>` ("Add app" → Web).
-2. תנו לה כינוי (למשל `recipe-web`), **אין** צורך לסמן Firebase Hosting.
-3. Firebase יציג אובייקט קונפיגורציה בסגנון:
-   ```js
-   const firebaseConfig = {
-     apiKey: "...",
-     authDomain: "...",
-     projectId: "...",
-     storageBucket: "...",
-     messagingSenderId: "...",
-     appId: "..."
-   };
-   ```
-4. פתחו את `Recipe/db.js` והחליפו את כל ה-`REPLACE_ME` בערכים האלו.
-
-## 3. פריסת חוקי האבטחה (Firestore rules)
-
-הקובץ `Recipe/firestore.rules` כבר מוכן ומגדיר שכל אחד יכול לקרוא/להוסיף/למחוק
-מתכונים (אין התחברות באפליקציה - זה "ספר מתכונים משפחתי" משותף), עם בדיקת
-שדות בסיסית שמונעת שמירה של מסמכים פגומים.
-
-הכי פשוט: בקונסולת Firebase → **Firestore Database → Rules**, מחקו את מה שיש
-שם והדביקו את התוכן של `firestore.rules` → **Publish**.
-
-לחלופין, דרך שורת הפקודה (אם מותקן Node.js):
-```bash
-npm install -g firebase-tools
-firebase login
-cd Recipe
-firebase use --add        # בחרו את הפרויקט שיצרתם
-firebase deploy --only firestore:rules
-```
-
-## 4. בדיקה מקומית
+## בדיקה מקומית
 
 קבצי ה-JS באפליקציה טעונים כמודולי ES (`type="module"`), אז פתיחה ישירה של
 `index.html` מהדיסק (`file://`) לא תעבוד - צריך שרת מקומי קטן:
@@ -57,11 +17,21 @@ npx serve .
 
 ואז פתחו את הכתובת שיודפס בטלפון/בדפדפן.
 
-## 5. פריסה לאינטרנט
+## פריסה לאינטרנט
 
-הריפו הזה כבר מוגדר עם GitHub Pages (`.github/workflows/static.yml`) שפורס
-את כל התיקייה בכל push ל-`main`. אחרי push, האפליקציה תהיה זמינה בכתובת
-ה-Pages של הריפו בנתיב `/Recipe/`.
+הריפו `https://github.com/AmitYarpur/Recipe` פרוס ל-GitHub Pages (או כל
+אחסון סטטי אחר שתבחרו) - כל push ל-`main` מעדכן את הגרסה החיה.
+
+## עדכון עתידי של חוקי ה-Firestore
+
+אם `firestore.rules` ישתנה בעתיד (למשל קטגוריה חדשה), פריסה מחדש:
+
+```bash
+cd Recipe
+firebase deploy --only firestore:rules
+```
+
+(דורש להיות מחוברים עם `firebase login` - כבר בוצע פעם אחת בסביבה הזו.)
 
 ## הערת אבטחה
 

@@ -1,10 +1,4 @@
 // Firebase config and data-access layer, kept separate from index.html.
-//
-// SETUP REQUIRED: this points at a placeholder project. Create a new
-// Firebase project for Recipe (console.firebase.google.com -> Add project),
-// enable Firestore in it, then replace firebaseConfig below with the config
-// object from Project settings -> your web app. See SETUP.md for the full
-// walkthrough, including deploying firestore.rules.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -19,12 +13,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.firebasestorage.app",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME"
+  apiKey: "AIzaSyBKb8Ody6tWABmGk-61iR4C8h4dDJ78xxw",
+  authDomain: "amit-recipe-d3532.firebaseapp.com",
+  projectId: "amit-recipe-d3532",
+  storageBucket: "amit-recipe-d3532.firebasestorage.app",
+  messagingSenderId: "1056335001514",
+  appId: "1:1056335001514:web:01e8f5f9298706950d5dd3"
 };
 
 const app = initializeApp(firebaseConfig);
