@@ -62,9 +62,16 @@
       </div>
 
       <div class="card">
-        <div class="field-group">
-          <label class="field-label" for="recipe-link">קישור מהרשת החברתית</label>
-          <input class="text-input" id="recipe-link" type="url" placeholder="https://...">
+        <div class="segmented" id="mode-segmented">
+          <button type="button" class="segment-btn active" id="mode-link-btn">קישור מרשת חברתית</button>
+          <button type="button" class="segment-btn" id="mode-manual-btn">מתכון פרטי</button>
+        </div>
+
+        <div id="link-fields">
+          <div class="field-group">
+            <label class="field-label" for="recipe-link">קישור מהרשת החברתית</label>
+            <input class="text-input" id="recipe-link" type="url" placeholder="https://...">
+          </div>
         </div>
 
         <div class="field-group">
@@ -77,6 +84,26 @@
           <select class="select-input" id="recipe-category">
             <option value="" disabled selected>בחרו קטגוריה</option>
           </select>
+        </div>
+
+        <div id="manual-fields" class="hidden">
+          <div class="field-group">
+            <label class="field-label">מצרכים</label>
+            <div class="dynamic-list" id="ingredients-list"></div>
+            <button type="button" class="add-row-btn" id="add-ingredient-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              הוסף מצרך
+            </button>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">אופן הכנה</label>
+            <div class="dynamic-list" id="instructions-list"></div>
+            <button type="button" class="add-row-btn" id="add-instruction-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              הוסף שלב
+            </button>
+          </div>
         </div>
 
         <div class="error" id="add-error"></div>
@@ -100,6 +127,17 @@
       <div class="sheet-handle"></div>
       <p class="sheet-title" id="detail-name"></p>
       <div class="recipe-meta" id="detail-meta" style="margin-top:6px;"></div>
+
+      <div id="detail-ingredients-section" class="detail-section hidden">
+        <h3>מצרכים</h3>
+        <ol class="detail-list" id="detail-ingredients-list"></ol>
+      </div>
+
+      <div id="detail-instructions-section" class="detail-section hidden">
+        <h3>אופן הכנה</h3>
+        <ol class="detail-list" id="detail-instructions-list"></ol>
+      </div>
+
       <div class="sheet-actions">
         <button class="btn-primary" id="detail-open-btn">פתח קישור</button>
         <button class="btn-ghost btn-danger" id="detail-delete-btn">מחק מתכון</button>
@@ -113,19 +151,21 @@
   <script type="module">
     import { CATEGORIES, addRecipe, getRecipes, deleteRecipe } from './db.js';
 
-    const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', other: 'קישור' };
+    const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', other: 'קישור', manual: 'מתכון פרטי' };
 
     const PLATFORM_ICONS = {
       youtube: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l5 3-5 3V9Z" fill="currentColor" stroke="none"/></svg>',
       instagram: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>',
       tiktok: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v10.5a3.5 3.5 0 1 1-3-3.46"/><path d="M14 3c0 3 2 5 5 5"/></svg>',
-      other: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg>'
+      other: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg>',
+      manual: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15h5M9.5 18h3"/></svg>'
     };
 
     let allRecipes = [];
     let currentCategory = 'הכל';
     let currentSearch = '';
     let activeRecipe = null;
+    let addMode = 'link';
 
     // --- theme ---------------------------------------------------------
     function applyThemeIcon() {
@@ -186,11 +226,65 @@
       document.getElementById('fab').classList.toggle('hidden', id !== 'browse-screen');
     }
 
+    // --- add-recipe mode toggle (link vs. manual entry) ----------------------
+    function setAddMode(mode) {
+      addMode = mode;
+      document.getElementById('mode-link-btn').classList.toggle('active', mode === 'link');
+      document.getElementById('mode-manual-btn').classList.toggle('active', mode === 'manual');
+      document.getElementById('link-fields').classList.toggle('hidden', mode === 'manual');
+      document.getElementById('manual-fields').classList.toggle('hidden', mode === 'link');
+    }
+    document.getElementById('mode-link-btn').addEventListener('click', () => setAddMode('link'));
+    document.getElementById('mode-manual-btn').addEventListener('click', () => setAddMode('manual'));
+
+    // --- dynamic ingredient / instruction rows --------------------------------
+    function addDynamicRow(containerId, placeholder) {
+      const container = document.getElementById(containerId);
+      const row = document.createElement('div');
+      row.className = 'dynamic-row';
+      row.innerHTML = `
+        <span class="row-index"></span>
+        <input class="text-input" type="text" placeholder="${placeholder}">
+        <button type="button" class="row-remove-btn" aria-label="הסר">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      `;
+      row.querySelector('.row-remove-btn').addEventListener('click', () => {
+        row.remove();
+        renumberRows(containerId);
+      });
+      container.appendChild(row);
+      renumberRows(containerId);
+      return row;
+    }
+
+    function renumberRows(containerId) {
+      const container = document.getElementById(containerId);
+      [...container.children].forEach((row, i) => {
+        row.querySelector('.row-index').textContent = i + 1;
+      });
+    }
+
+    function resetDynamicList(containerId, placeholder) {
+      document.getElementById(containerId).innerHTML = '';
+      addDynamicRow(containerId, placeholder);
+    }
+
+    function collectDynamicValues(containerId) {
+      return [...document.getElementById(containerId).querySelectorAll('input')].map(i => i.value);
+    }
+
+    document.getElementById('add-ingredient-btn').addEventListener('click', () => addDynamicRow('ingredients-list', 'לדוגמה: 2 כוסות קמח'));
+    document.getElementById('add-instruction-btn').addEventListener('click', () => addDynamicRow('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים'));
+
     document.getElementById('fab-btn').addEventListener('click', () => {
       document.getElementById('recipe-link').value = '';
       document.getElementById('recipe-name').value = '';
       categorySelect.selectedIndex = 0;
       document.getElementById('add-error').textContent = '';
+      setAddMode('link');
+      resetDynamicList('ingredients-list', 'לדוגמה: 2 כוסות קמח');
+      resetDynamicList('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים');
       showScreen('add-screen');
     });
     document.getElementById('add-back-btn').addEventListener('click', () => showScreen('browse-screen'));
@@ -226,6 +320,8 @@
         if (r.thumbnailUrl) {
           thumb.style.backgroundImage = `url('${r.thumbnailUrl}')`;
           thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
+        } else if (r.platform === 'manual') {
+          thumb.innerHTML = PLATFORM_ICONS.manual + '<span class="thumb-manual-label">מתכון פרטי</span>';
         } else {
           thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
         }
@@ -259,6 +355,17 @@
     });
 
     // --- detail sheet -------------------------------------------------------
+    function renderDetailList(sectionId, listId, items) {
+      const section = document.getElementById(sectionId);
+      const list = document.getElementById(listId);
+      if (!items || items.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+      list.innerHTML = items.map((item, i) => `<li><span class="num">${i + 1}</span><span>${escapeHtml(item)}</span></li>`).join('');
+    }
+
     function openDetail(recipe) {
       activeRecipe = recipe;
       document.getElementById('detail-name').textContent = recipe.name;
@@ -266,6 +373,12 @@
         <span class="badge badge-accent">${escapeHtml(recipe.category)}</span>
         <span class="platform-tag">${PLATFORM_LABELS[recipe.platform] || PLATFORM_LABELS.other}</span>
       `;
+
+      const isManual = recipe.platform === 'manual';
+      document.getElementById('detail-open-btn').classList.toggle('hidden', isManual);
+      renderDetailList('detail-ingredients-section', 'detail-ingredients-list', isManual ? recipe.ingredients : null);
+      renderDetailList('detail-instructions-section', 'detail-instructions-list', isManual ? recipe.instructions : null);
+
       document.getElementById('detail-backdrop').classList.add('active');
     }
     function closeDetail() {
@@ -298,11 +411,20 @@
     document.getElementById('save-recipe-btn').addEventListener('click', async () => {
       const btn = document.getElementById('save-recipe-btn');
       const errorEl = document.getElementById('add-error');
-      const values = {
-        link: document.getElementById('recipe-link').value,
-        name: document.getElementById('recipe-name').value,
-        category: categorySelect.value
-      };
+      const values = addMode === 'manual'
+        ? {
+            mode: 'manual',
+            name: document.getElementById('recipe-name').value,
+            category: categorySelect.value,
+            ingredients: collectDynamicValues('ingredients-list'),
+            instructions: collectDynamicValues('instructions-list')
+          }
+        : {
+            mode: 'link',
+            link: document.getElementById('recipe-link').value,
+            name: document.getElementById('recipe-name').value,
+            category: categorySelect.value
+          };
       errorEl.textContent = '';
       btn.disabled = true;
       const originalText = btn.textContent;

@@ -110,15 +110,43 @@ function recipesCollection() {
   return collection(db, "recipes");
 }
 
-// values: { name: string (Hebrew), link: string, category: string }
+// Cleans up a raw list of textbox values into the array actually stored:
+// trims each entry and drops empty ones (e.g. a blank row left when the
+// user added a step but never filled it in).
+function cleanList(items) {
+  return (items || []).map(s => s.trim()).filter(Boolean);
+}
+
+// values, link mode: { mode: 'link', name, link, category }
+// values, manual mode: { mode: 'manual', name, category, ingredients: string[], instructions: string[] }
 export async function addRecipe(values) {
   const name = values.name.trim();
-  const link = values.link.trim();
   const category = values.category;
 
   if (!name) throw new Error("נא להזין שם למתכון.");
-  if (!link || !/^https?:\/\//i.test(link)) throw new Error("נא להזין קישור תקין (החל ב-http:// או https://).");
   if (!CATEGORIES.includes(category)) throw new Error("נא לבחור קטגוריה.");
+
+  if (values.mode === "manual") {
+    const ingredients = cleanList(values.ingredients);
+    const instructions = cleanList(values.instructions);
+    if (ingredients.length === 0) throw new Error("נא להזין לפחות מצרך אחד.");
+    if (instructions.length === 0) throw new Error("נא להזין לפחות שלב הכנה אחד.");
+
+    await withTimeout(addDoc(recipesCollection(), {
+      name,
+      category,
+      platform: "manual",
+      thumbnailUrl: null,
+      ingredients,
+      instructions,
+      createdAt: serverTimestamp(),
+      createdAtLocal: new Date().toString()
+    }), "recipe:add");
+    return;
+  }
+
+  const link = values.link.trim();
+  if (!link || !/^https?:\/\//i.test(link)) throw new Error("נא להזין קישור תקין (החל ב-http:// או https://).");
 
   const platform = detectPlatform(link);
   const thumbnailUrl = await resolveThumbnail(link, platform);
@@ -135,7 +163,8 @@ export async function addRecipe(values) {
 }
 
 // Returns one row per recipe: { id, name, link, category, platform,
-// thumbnailUrl, createdAt: Date }, newest first.
+// thumbnailUrl, ingredients, instructions, createdAt: Date }, newest first.
+// link/ingredients/instructions are only populated for the relevant mode.
 export async function getRecipes() {
   const q = query(recipesCollection(), orderBy("createdAt", "desc"));
   const snap = await withTimeout(getDocs(q), "recipe:list");
@@ -145,10 +174,12 @@ export async function getRecipes() {
     return {
       id: docSnap.id,
       name: data.name,
-      link: data.link,
+      link: data.link || null,
       category: data.category,
       platform: data.platform || "other",
       thumbnailUrl: data.thumbnailUrl || null,
+      ingredients: data.ingredients || null,
+      instructions: data.instructions || null,
       createdAt: data.createdAt ? data.createdAt.toDate() : new Date(data.createdAtLocal)
     };
   });

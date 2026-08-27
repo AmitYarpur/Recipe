@@ -12,11 +12,25 @@ service cloud.firestore {
       allow create: if request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() < 200
-                    && request.resource.data.link is string
-                    && request.resource.data.link.matches('^https?://.*')
                     && request.resource.data.category in
                        ['עיקריות', 'סלטים', 'קינוחים', 'מרקים', 'מאפים', 'ארוחת בוקר', 'משקאות']
-                    && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'other'];
+                    && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'other', 'manual']
+                    && (
+                      // Manual recipe: typed in by hand, no external link -
+                      // needs its own ingredients/steps instead.
+                      (request.resource.data.platform == 'manual'
+                        && request.resource.data.ingredients is list
+                        && request.resource.data.ingredients.size() > 0
+                        && request.resource.data.ingredients.size() <= 60
+                        && request.resource.data.instructions is list
+                        && request.resource.data.instructions.size() > 0
+                        && request.resource.data.instructions.size() <= 60)
+                      ||
+                      // Link recipe: imported from YouTube/Instagram/TikTok/other.
+                      (request.resource.data.platform != 'manual'
+                        && request.resource.data.link is string
+                        && request.resource.data.link.matches('^https?://.*'))
+                    );
       allow delete: if true;
     }
   }
