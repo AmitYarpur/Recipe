@@ -180,6 +180,17 @@
       manual: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15h5M9.5 18h3"/></svg>'
     };
 
+    // Manual (no-link) recipes only ever have the uploaded photo, so it's
+    // the obvious choice there. Link recipes prefer the source site's own
+    // thumbnail - it's what the video actually looks like - and only fall
+    // back to a personal photo if one was added and the site had none.
+    function pickDisplayImage(r) {
+      if (r.platform === 'manual') return { src: r.photoDataUrl || null, isVideoThumb: false };
+      if (r.thumbnailUrl) return { src: r.thumbnailUrl, isVideoThumb: true };
+      if (r.photoDataUrl) return { src: r.photoDataUrl, isVideoThumb: false };
+      return { src: null, isVideoThumb: false };
+    }
+
     let allRecipes = [];
     let currentCategory = 'הכל';
     let currentSearch = '';
@@ -502,13 +513,12 @@
 
         const thumb = document.createElement('div');
         thumb.className = 'recipe-thumb';
-        if (r.photoDataUrl) {
-          // A personal photo of the finished dish - shown as-is, no play
-          // icon (that's reserved for the video's own thumbnail below).
-          thumb.style.backgroundImage = `url("${r.photoDataUrl}")`;
-        } else if (r.thumbnailUrl) {
-          thumb.style.backgroundImage = `url("${r.thumbnailUrl}")`;
-          thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
+        const { src: thumbSrc, isVideoThumb } = pickDisplayImage(r);
+        if (thumbSrc) {
+          thumb.style.backgroundImage = `url("${thumbSrc}")`;
+          if (isVideoThumb) {
+            thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
+          }
         } else if (r.platform === 'manual') {
           thumb.innerHTML = PLATFORM_ICONS.manual + '<span class="thumb-manual-label">מתכון פרטי</span>';
         } else {
@@ -564,7 +574,7 @@
       `;
 
       const photoEl = document.getElementById('detail-photo');
-      const detailImage = recipe.photoDataUrl || recipe.thumbnailUrl;
+      const { src: detailImage } = pickDisplayImage(recipe);
       if (detailImage) {
         photoEl.src = detailImage;
         photoEl.classList.remove('hidden');
