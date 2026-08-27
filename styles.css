@@ -133,15 +133,10 @@ body {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: var(--accent-gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
   box-shadow: var(--shadow-soft);
   flex-shrink: 0;
 }
-
-.brand-icon svg { width: 20px; height: 20px; stroke: #fff; }
 
 .brand-title {
   font-size: 19px;
