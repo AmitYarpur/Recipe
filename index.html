@@ -61,7 +61,7 @@
         <button class="icon-btn" id="add-back-btn" aria-label="חזרה">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h2 class="headline" style="margin:0;">מתכון חדש</h2>
+        <h2 class="headline" style="margin:0;" id="add-screen-title">מתכון חדש</h2>
         <span style="width:38px;"></span>
       </div>
 
@@ -144,6 +144,7 @@
 
       <div class="sheet-actions">
         <button class="btn-primary" id="detail-open-btn">פתח קישור</button>
+        <button class="btn-ghost" id="detail-edit-btn">ערוך מתכון</button>
         <button class="btn-ghost btn-danger" id="detail-delete-btn">מחק מתכון</button>
         <button class="btn-ghost" id="detail-close-btn">סגור</button>
       </div>
@@ -153,7 +154,7 @@
   <div class="toast" id="toast"></div>
 
   <script type="module">
-    import { CATEGORIES, addRecipe, getRecipes, deleteRecipe } from './db.js';
+    import { CATEGORIES, addRecipe, updateRecipe, getRecipes, deleteRecipe } from './db.js';
 
     const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', other: 'קישור', manual: 'מתכון פרטי' };
 
@@ -170,6 +171,7 @@
     let currentSearch = '';
     let activeRecipe = null;
     let addMode = 'link';
+    let editingRecipeId = null;
 
     // --- theme ---------------------------------------------------------
     function applyThemeIcon() {
@@ -302,6 +304,17 @@
       addDynamicRow(containerId, placeholder);
     }
 
+    // Rebuilds the row list from existing values (used when opening a
+    // recipe for editing) - one row per item, or a single empty row if
+    // there's nothing saved yet.
+    function fillDynamicList(containerId, items, placeholder) {
+      document.getElementById(containerId).innerHTML = '';
+      const values = items && items.length ? items : [''];
+      values.forEach(val => {
+        addDynamicRow(containerId, placeholder).querySelector('input').value = val;
+      });
+    }
+
     function collectDynamicValues(containerId) {
       return [...document.getElementById(containerId).querySelectorAll('input')].map(i => i.value);
     }
@@ -310,6 +323,9 @@
     document.getElementById('add-instruction-btn').addEventListener('click', () => addDynamicRow('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים'));
 
     document.getElementById('fab-btn').addEventListener('click', () => {
+      editingRecipeId = null;
+      document.getElementById('add-screen-title').textContent = 'מתכון חדש';
+      document.getElementById('save-recipe-btn').textContent = 'שמור מתכון';
       document.getElementById('recipe-link').value = '';
       document.getElementById('recipe-name').value = '';
       categorySelect.selectedIndex = 0;
@@ -320,6 +336,31 @@
       showScreen('add-screen');
     });
     document.getElementById('add-back-btn').addEventListener('click', () => showScreen('browse-screen'));
+
+    // --- edit recipe -----------------------------------------------------------
+    function openEditScreen(recipe) {
+      editingRecipeId = recipe.id;
+      document.getElementById('add-screen-title').textContent = 'עריכת מתכון';
+      document.getElementById('save-recipe-btn').textContent = 'עדכן מתכון';
+      document.getElementById('add-error').textContent = '';
+
+      document.getElementById('recipe-name').value = recipe.name;
+      categorySelect.value = recipe.category;
+
+      if (recipe.platform === 'manual') {
+        setAddMode('manual');
+        document.getElementById('recipe-link').value = '';
+        fillDynamicList('ingredients-list', recipe.ingredients, 'לדוגמה: 2 כוסות קמח');
+        fillDynamicList('instructions-list', recipe.instructions, 'לדוגמה: לערבב את כל המרכיבים היבשים');
+      } else {
+        setAddMode('link');
+        document.getElementById('recipe-link').value = recipe.link || '';
+        resetDynamicList('ingredients-list', 'לדוגמה: 2 כוסות קמח');
+        resetDynamicList('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים');
+      }
+
+      showScreen('add-screen');
+    }
 
     // --- list rendering ------------------------------------------------------
     function renderList() {
@@ -424,6 +465,12 @@
     document.getElementById('detail-open-btn').addEventListener('click', () => {
       if (activeRecipe) window.open(activeRecipe.link, '_blank', 'noopener');
     });
+    document.getElementById('detail-edit-btn').addEventListener('click', () => {
+      if (!activeRecipe) return;
+      const recipe = activeRecipe;
+      closeDetail();
+      openEditScreen(recipe);
+    });
     document.getElementById('detail-delete-btn').addEventListener('click', async () => {
       if (!activeRecipe) return;
       if (!confirm(`למחוק את "${activeRecipe.name}"?`)) return;
@@ -462,9 +509,15 @@
       const originalText = btn.textContent;
       btn.innerHTML = '<span class="spinner"></span>';
       try {
-        await addRecipe(values);
-        showScreen('browse-screen');
-        showToast('המתכון נוסף בהצלחה');
+        if (editingRecipeId) {
+          await updateRecipe(editingRecipeId, values);
+          showScreen('browse-screen');
+          showToast('המתכון עודכן בהצלחה');
+        } else {
+          await addRecipe(values);
+          showScreen('browse-screen');
+          showToast('המתכון נוסף בהצלחה');
+        }
         await loadRecipes();
       } catch (e) {
         errorEl.textContent = e.message || 'שגיאה בשמירת המתכון.';

@@ -5,7 +5,9 @@ import {
   collection,
   addDoc,
   doc,
+  updateDoc,
   deleteDoc,
+  deleteField,
   serverTimestamp,
   query,
   orderBy,
@@ -117,9 +119,13 @@ function cleanList(items) {
   return (items || []).map(s => s.trim()).filter(Boolean);
 }
 
+// Validates values shared by add/update and builds the Firestore field set
+// for whichever mode was picked. Shared so add and edit can never drift
+// out of sync on validation rules.
+//
 // values, link mode: { mode: 'link', name, link, category }
 // values, manual mode: { mode: 'manual', name, category, ingredients: string[], instructions: string[] }
-export async function addRecipe(values) {
+async function buildRecipeFields(values) {
   const name = values.name.trim();
   const category = values.category;
 
@@ -132,17 +138,14 @@ export async function addRecipe(values) {
     if (ingredients.length === 0) throw new Error("נא להזין לפחות מצרך אחד.");
     if (instructions.length === 0) throw new Error("נא להזין לפחות שלב הכנה אחד.");
 
-    await withTimeout(addDoc(recipesCollection(), {
+    return {
       name,
       category,
       platform: "manual",
       thumbnailUrl: null,
       ingredients,
-      instructions,
-      createdAt: serverTimestamp(),
-      createdAtLocal: new Date().toString()
-    }), "recipe:add");
-    return;
+      instructions
+    };
   }
 
   const link = values.link.trim();
@@ -151,15 +154,31 @@ export async function addRecipe(values) {
   const platform = detectPlatform(link);
   const thumbnailUrl = await resolveThumbnail(link, platform);
 
+  return { name, link, category, platform, thumbnailUrl };
+}
+
+export async function addRecipe(values) {
+  const fields = await buildRecipeFields(values);
   await withTimeout(addDoc(recipesCollection(), {
-    name,
-    link,
-    category,
-    platform,
-    thumbnailUrl,
+    ...fields,
     createdAt: serverTimestamp(),
     createdAtLocal: new Date().toString()
   }), "recipe:add");
+}
+
+// Overwrites an existing recipe's content. Supports switching between link
+// and manual mode: whichever fields don't apply to the new mode are removed
+// with deleteField() rather than left stale from the old mode.
+export async function updateRecipe(id, values) {
+  const fields = await buildRecipeFields(values);
+  const clearFields = values.mode === "manual"
+    ? { link: deleteField() }
+    : { ingredients: deleteField(), instructions: deleteField() };
+
+  await withTimeout(updateDoc(doc(db, "recipes", id), {
+    ...fields,
+    ...clearFields
+  }), "recipe:update");
 }
 
 // Returns one row per recipe: { id, name, link, category, platform,

@@ -9,7 +9,7 @@ service cloud.firestore {
     // malformed/oversized documents, not malicious ones.
     match /recipes/{recipeId} {
       allow read: if true;
-      allow create: if request.resource.data.name is string
+      allow create, update: if request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() < 200
                     && request.resource.data.category in
