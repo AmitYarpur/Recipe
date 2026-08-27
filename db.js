@@ -63,6 +63,7 @@ export function detectPlatform(url) {
   if (u.includes("youtube.com") || u.includes("youtu.be")) return "youtube";
   if (u.includes("instagram.com")) return "instagram";
   if (u.includes("tiktok.com")) return "tiktok";
+  if (u.includes("facebook.com") || u.includes("fb.watch")) return "facebook";
   return "other";
 }
 

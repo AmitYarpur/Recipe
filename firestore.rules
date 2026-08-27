@@ -14,7 +14,7 @@ service cloud.firestore {
                     && request.resource.data.name.size() < 200
                     && request.resource.data.category in
                        ['עיקריות', 'סלטים', 'קינוחים', 'מרקים', 'מאפים', 'משקאות']
-                    && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'other', 'manual']
+                    && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'facebook', 'other', 'manual']
                     // Optional photo, stored inline as a base64 data URL
                     // (no Storage bucket - that needs the paid Blaze plan).
                     // Capped well under Firestore's 1MiB document limit;
@@ -34,7 +34,7 @@ service cloud.firestore {
                         && request.resource.data.instructions.size() > 0
                         && request.resource.data.instructions.size() <= 60)
                       ||
-                      // Link recipe: imported from YouTube/Instagram/TikTok/other.
+                      // Link recipe: imported from YouTube/Instagram/TikTok/Facebook/other.
                       (request.resource.data.platform != 'manual'
                         && request.resource.data.link is string
                         && request.resource.data.link.matches('^https?://.*'))
