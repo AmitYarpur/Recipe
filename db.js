@@ -34,7 +34,7 @@ if ("serviceWorker" in navigator) {
 }
 
 // Hebrew category list shown in the add-recipe form and the filter chips.
-export const CATEGORIES = ["עיקריות", "סלטים", "קינוחים", "מרקים", "מאפים", "ארוחת בוקר", "משקאות"];
+export const CATEGORIES = ["עיקריות", "סלטים", "קינוחים", "מרקים", "מאפים", "משקאות"];
 
 // A hung request (e.g. a flaky mobile connection, or a socket a suspended
 // PWA silently lost) never rejects on its own - it just leaves the caller

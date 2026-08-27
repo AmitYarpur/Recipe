@@ -13,7 +13,7 @@ service cloud.firestore {
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() < 200
                     && request.resource.data.category in
-                       ['עיקריות', 'סלטים', 'קינוחים', 'מרקים', 'מאפים', 'ארוחת בוקר', 'משקאות']
+                       ['עיקריות', 'סלטים', 'קינוחים', 'מרקים', 'מאפים', 'משקאות']
                     && request.resource.data.platform in ['youtube', 'instagram', 'tiktok', 'other', 'manual']
                     && (
                       // Manual recipe: typed in by hand, no external link -
