@@ -102,6 +102,17 @@ body {
 .screen { display: none; }
 .screen.active { display: block; }
 
+/* Browse screen fills exactly one viewport (minus the page's own top/bottom
+   padding, where the fixed "מתכון חדש" button lives) and lays its header
+   pieces out as a column, so the recipe frame below can take whatever
+   space is left and scroll internally instead of the whole page scrolling. */
+#browse-screen.active {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 114px);
+  height: calc(100dvh - 114px);
+}
+
 /* --- Top bar ------------------------------------------------------------ */
 .top-bar {
   display: flex;
@@ -285,6 +296,22 @@ p.subtext {
 }
 
 /* --- Recipe list ----------------------------------------------------------- */
+/* The gentle frame around the recipe list - fills the remaining height
+   below the category chips (see #browse-screen.active) and owns its own
+   scrollbar, so the header above it and the "מתכון חדש" button below it
+   both stay put while the list itself scrolls. */
+.recipe-frame {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-wash);
+  box-shadow: var(--shadow-soft);
+  padding: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+
 .recipe-list {
   display: flex;
   flex-direction: column;
