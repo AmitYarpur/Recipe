@@ -602,7 +602,13 @@
       if (e.target.id === 'detail-backdrop') closeDetail();
     });
     document.getElementById('detail-open-btn').addEventListener('click', () => {
-      if (activeRecipe) window.open(activeRecipe.link, '_blank', 'noopener');
+      // window.open(..., '_blank') spawns a whole new blank browser tab in
+      // an installed (standalone) PWA before the OS hands it off to the
+      // native app - that empty tab is then left behind for the user to
+      // close manually. Navigating the current window instead means there's
+      // nothing extra left over: switching back (swipe/app-switcher) simply
+      // returns to this same PWA window, still showing this recipe.
+      if (activeRecipe) window.location.href = activeRecipe.link;
     });
     document.getElementById('detail-edit-btn').addEventListener('click', () => {
       if (!activeRecipe) return;
