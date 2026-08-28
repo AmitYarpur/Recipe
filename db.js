@@ -126,6 +126,7 @@ function cleanList(items) {
 //
 // values, link mode: { mode: 'link', name, link, category }
 // values, manual mode: { mode: 'manual', name, category, ingredients: string[], instructions: string[] }
+// values, photo mode: { mode: 'photo', name, category, photo }
 async function buildRecipeFields(values) {
   const name = values.name.trim();
   const category = values.category;
@@ -147,6 +148,14 @@ async function buildRecipeFields(values) {
       ingredients,
       instructions
     };
+  }
+
+  if (values.mode === "photo") {
+    // null means "no photo selected" - required here since the photo IS the
+    // recipe. undefined (edit only, photo left untouched) is fine - it just
+    // means an existing photo stays as-is.
+    if (values.photo === null) throw new Error("נא לצלם או להעלות תמונה של המתכון.");
+    return { name, category, platform: "photo", thumbnailUrl: null };
   }
 
   const link = values.link.trim();
@@ -185,6 +194,8 @@ export async function updateRecipe(id, values) {
   const fields = await buildRecipeFields(values);
   const clearFields = values.mode === "manual"
     ? { link: deleteField() }
+    : values.mode === "photo"
+    ? { link: deleteField(), ingredients: deleteField(), instructions: deleteField() }
     : { ingredients: deleteField(), instructions: deleteField() };
 
   if (values.photo === null) {

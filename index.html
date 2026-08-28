@@ -57,6 +57,52 @@
       </div>
     </div>
 
+    <!-- Screen: choose how to add a recipe -->
+    <div id="add-choice-screen" class="screen">
+      <div class="top-bar">
+        <button class="icon-btn" id="choice-back-btn" aria-label="חזרה">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <h2 class="headline" style="margin:0;">מתכון חדש</h2>
+        <span style="width:38px;"></span>
+      </div>
+
+      <div class="choice-list">
+        <button type="button" class="choice-card" id="choice-link">
+          <span class="choice-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg>
+          </span>
+          <span class="choice-text">
+            <span class="choice-title">לינק מרשת חברתית</span>
+            <span class="choice-subtitle">יוטיוב, אינסטגרם, טיקטוק ועוד</span>
+          </span>
+          <svg class="choice-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
+        </button>
+
+        <button type="button" class="choice-card" id="choice-manual">
+          <span class="choice-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15h5M9.5 18h3"/></svg>
+          </span>
+          <span class="choice-text">
+            <span class="choice-title">הוספה ידנית</span>
+            <span class="choice-subtitle">כתבו את המצרכים ואופן ההכנה</span>
+          </span>
+          <svg class="choice-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
+        </button>
+
+        <button type="button" class="choice-card" id="choice-photo">
+          <span class="choice-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.5A1 1 0 0 1 9 4h6a1 1 0 0 1 .9.5L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><circle cx="12" cy="13" r="3.4"/></svg>
+          </span>
+          <span class="choice-text">
+            <span class="choice-title">צילום מתכון קיים</span>
+            <span class="choice-subtitle">צלמו עמוד מתכון מספר בישול</span>
+          </span>
+          <svg class="choice-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
     <!-- Screen: add a recipe -->
     <div id="add-screen" class="screen">
       <div class="top-bar">
@@ -69,8 +115,9 @@
 
       <div class="card">
         <div class="segmented" id="mode-segmented">
-          <button type="button" class="segment-btn active" id="mode-link-btn">קישור מרשת חברתית</button>
-          <button type="button" class="segment-btn" id="mode-manual-btn">מתכון פרטי</button>
+          <button type="button" class="segment-btn active" id="mode-link-btn">קישור</button>
+          <button type="button" class="segment-btn" id="mode-manual-btn">הוספה ידנית</button>
+          <button type="button" class="segment-btn" id="mode-photo-btn">צילום</button>
         </div>
 
         <div id="link-fields">
@@ -93,7 +140,7 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label">תמונה (אופציונלי)</label>
+          <label class="field-label" id="photo-field-label">תמונה (אופציונלי)</label>
           <div id="photo-preview-wrap" class="hidden">
             <img id="photo-preview" class="photo-preview" alt="">
             <button type="button" class="btn-ghost btn-danger" id="remove-photo-btn">הסר תמונה</button>
@@ -101,7 +148,7 @@
           <label class="photo-upload-btn" id="photo-upload-label">
             <input type="file" id="photo-input" accept="image/*" class="visually-hidden">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="9" cy="11" r="2.2"/><path d="m21 16-5-4-8 7"/></svg>
-            הוסף תמונה
+            <span id="photo-upload-text">הוסף תמונה</span>
           </label>
         </div>
 
@@ -144,7 +191,12 @@
   <div class="sheet-backdrop" id="detail-backdrop">
     <div class="sheet">
       <div class="sheet-handle"></div>
-      <img id="detail-photo" class="detail-photo hidden" alt="">
+      <button type="button" class="detail-photo-wrap hidden" id="detail-photo-wrap" aria-label="הצג בגודל מלא">
+        <img id="detail-photo" class="detail-photo" alt="">
+        <span class="zoom-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m21 21-4.8-4.8"/><path d="M10.5 8v5M8 10.5h5"/></svg>
+        </span>
+      </button>
       <p class="sheet-title" id="detail-name"></p>
       <div class="recipe-meta" id="detail-meta" style="margin-top:6px;"></div>
 
@@ -167,12 +219,26 @@
     </div>
   </div>
 
+  <!-- Full-screen photo viewer: pinch/pan zoom to read a photographed
+       recipe page. Custom pointer-event zoom since the app's own viewport
+       is fixed with user-scalable=no (needed everywhere else to keep the
+       UI feeling like an app, not a webpage), so native pinch-zoom doesn't
+       work here without this. -->
+  <div class="photo-viewer" id="photo-viewer">
+    <button class="photo-viewer-close" id="photo-viewer-close" aria-label="סגור">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="photo-viewer-stage" id="photo-viewer-stage">
+      <img id="photo-viewer-img" alt="">
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script type="module">
     import { CATEGORIES, addRecipe, updateRecipe, getRecipes, deleteRecipe } from './db.js';
 
-    const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', facebook: 'פייסבוק', other: 'קישור', manual: 'מתכון פרטי' };
+    const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', facebook: 'פייסבוק', other: 'קישור', manual: 'הוספה ידנית', photo: 'מתכון מצולם' };
 
     const PLATFORM_ICONS = {
       youtube: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l5 3-5 3V9Z" fill="currentColor" stroke="none"/></svg>',
@@ -180,15 +246,16 @@
       tiktok: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v10.5a3.5 3.5 0 1 1-3-3.46"/><path d="M14 3c0 3 2 5 5 5"/></svg>',
       facebook: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 8.5h-1.7c-.7 0-1.3.6-1.3 1.3V11h3l-.4 2.5h-2.6V19h-2.5v-5.5H7V11h1.9V9.5c0-1.9 1.3-3.2 3.2-3.2h2.4v2.2Z" fill="currentColor" stroke="none"/></svg>',
       other: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg>',
-      manual: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15h5M9.5 18h3"/></svg>'
+      manual: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15h5M9.5 18h3"/></svg>',
+      photo: '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="9" cy="11" r="2.2"/><path d="m21 16-5-4-8 7"/></svg>'
     };
 
-    // Manual (no-link) recipes only ever have the uploaded photo, so it's
-    // the obvious choice there. Link recipes prefer the source site's own
-    // thumbnail - it's what the video actually looks like - and only fall
-    // back to a personal photo if one was added and the site had none.
+    // Manual and photographed recipes only ever have the uploaded photo, so
+    // it's the obvious choice there. Link recipes prefer the source site's
+    // own thumbnail - it's what the video actually looks like - and only
+    // fall back to a personal photo if one was added and the site had none.
     function pickDisplayImage(r) {
-      if (r.platform === 'manual') return { src: r.photoDataUrl || null, isVideoThumb: false };
+      if (r.platform === 'manual' || r.platform === 'photo') return { src: r.photoDataUrl || null, isVideoThumb: false };
       if (r.thumbnailUrl) return { src: r.thumbnailUrl, isVideoThumb: true };
       if (r.photoDataUrl) return { src: r.photoDataUrl, isVideoThumb: false };
       return { src: null, isVideoThumb: false };
@@ -288,16 +355,33 @@
       document.getElementById('fab').classList.toggle('hidden', id !== 'browse-screen');
     }
 
-    // --- add-recipe mode toggle (link vs. manual entry) ----------------------
+    // --- add-recipe mode toggle (link / manual / photo) ----------------------
     function setAddMode(mode) {
       addMode = mode;
       document.getElementById('mode-link-btn').classList.toggle('active', mode === 'link');
       document.getElementById('mode-manual-btn').classList.toggle('active', mode === 'manual');
-      document.getElementById('link-fields').classList.toggle('hidden', mode === 'manual');
-      document.getElementById('manual-fields').classList.toggle('hidden', mode === 'link');
+      document.getElementById('mode-photo-btn').classList.toggle('active', mode === 'photo');
+      document.getElementById('link-fields').classList.toggle('hidden', mode !== 'link');
+      document.getElementById('manual-fields').classList.toggle('hidden', mode !== 'manual');
+
+      // Photo mode has no link/ingredients/steps - the photo itself is the
+      // whole recipe, so it's required rather than optional here, and the
+      // file picker defaults to the camera (this is meant to be a page from
+      // a physical cookbook, photographed right now).
+      const photoInput = document.getElementById('photo-input');
+      if (mode === 'photo') {
+        document.getElementById('photo-field-label').textContent = 'תמונה';
+        document.getElementById('photo-upload-text').textContent = 'צלמו את המתכון';
+        photoInput.setAttribute('capture', 'environment');
+      } else {
+        document.getElementById('photo-field-label').textContent = 'תמונה (אופציונלי)';
+        document.getElementById('photo-upload-text').textContent = 'הוסף תמונה';
+        photoInput.removeAttribute('capture');
+      }
     }
     document.getElementById('mode-link-btn').addEventListener('click', () => setAddMode('link'));
     document.getElementById('mode-manual-btn').addEventListener('click', () => setAddMode('manual'));
+    document.getElementById('mode-photo-btn').addEventListener('click', () => setAddMode('photo'));
 
     // --- photo upload ----------------------------------------------------------
     // undefined = no change (edit only, leaves any existing photo alone),
@@ -436,7 +520,13 @@
     document.getElementById('add-ingredient-btn').addEventListener('click', () => addDynamicRow('ingredients-list', 'לדוגמה: 2 כוסות קמח'));
     document.getElementById('add-instruction-btn').addEventListener('click', () => addDynamicRow('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים'));
 
-    document.getElementById('fab-btn').addEventListener('click', () => {
+    // Tapping the fab opens the 3-option chooser rather than the form
+    // directly; each option below resets the form for a fresh recipe in
+    // that mode and jumps straight past the chooser into it.
+    document.getElementById('fab-btn').addEventListener('click', () => showScreen('add-choice-screen'));
+    document.getElementById('choice-back-btn').addEventListener('click', () => showScreen('browse-screen'));
+
+    function resetAddForm(mode) {
       editingRecipeId = null;
       document.getElementById('add-screen-title').textContent = 'מתכון חדש';
       document.getElementById('save-recipe-btn').textContent = 'שמור מתכון';
@@ -444,14 +534,23 @@
       document.getElementById('recipe-name').value = '';
       categorySelect.selectedIndex = 0;
       document.getElementById('add-error').textContent = '';
-      setAddMode('link');
       resetDynamicList('ingredients-list', 'לדוגמה: 2 כוסות קמח');
       resetDynamicList('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים');
       selectedPhoto = null;
       hidePhotoPreview();
-      showScreen('add-screen');
+      setAddMode(mode);
+    }
+
+    document.getElementById('choice-link').addEventListener('click', () => { resetAddForm('link'); showScreen('add-screen'); });
+    document.getElementById('choice-manual').addEventListener('click', () => { resetAddForm('manual'); showScreen('add-screen'); });
+    document.getElementById('choice-photo').addEventListener('click', () => { resetAddForm('photo'); showScreen('add-screen'); });
+
+    // New-recipe flow came from the chooser, so cancelling goes back there;
+    // editing a recipe skipped the chooser entirely, so it goes straight
+    // back to the list.
+    document.getElementById('add-back-btn').addEventListener('click', () => {
+      showScreen(editingRecipeId ? 'browse-screen' : 'add-choice-screen');
     });
-    document.getElementById('add-back-btn').addEventListener('click', () => showScreen('browse-screen'));
 
     // --- edit recipe -----------------------------------------------------------
     function openEditScreen(recipe) {
@@ -478,6 +577,11 @@
         document.getElementById('recipe-link').value = '';
         fillDynamicList('ingredients-list', recipe.ingredients, 'לדוגמה: 2 כוסות קמח');
         fillDynamicList('instructions-list', recipe.instructions, 'לדוגמה: לערבב את כל המרכיבים היבשים');
+      } else if (recipe.platform === 'photo') {
+        setAddMode('photo');
+        document.getElementById('recipe-link').value = '';
+        resetDynamicList('ingredients-list', 'לדוגמה: 2 כוסות קמח');
+        resetDynamicList('instructions-list', 'לדוגמה: לערבב את כל המרכיבים היבשים');
       } else {
         setAddMode('link');
         document.getElementById('recipe-link').value = recipe.link || '';
@@ -522,8 +626,8 @@
           if (isVideoThumb) {
             thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
           }
-        } else if (r.platform === 'manual') {
-          thumb.innerHTML = PLATFORM_ICONS.manual + '<span class="thumb-manual-label">מתכון פרטי</span>';
+        } else if (r.platform === 'manual' || r.platform === 'photo') {
+          thumb.innerHTML = PLATFORM_ICONS[r.platform] + `<span class="thumb-manual-label">${PLATFORM_LABELS[r.platform]}</span>`;
         } else {
           thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
         }
@@ -577,17 +681,19 @@
       `;
 
       const photoEl = document.getElementById('detail-photo');
+      const photoWrap = document.getElementById('detail-photo-wrap');
       const { src: detailImage } = pickDisplayImage(recipe);
       if (detailImage) {
         photoEl.src = detailImage;
-        photoEl.classList.remove('hidden');
+        photoWrap.classList.remove('hidden');
       } else {
-        photoEl.classList.add('hidden');
+        photoWrap.classList.add('hidden');
         photoEl.src = '';
       }
 
       const isManual = recipe.platform === 'manual';
-      document.getElementById('detail-open-btn').classList.toggle('hidden', isManual);
+      const hasLink = recipe.platform !== 'manual' && recipe.platform !== 'photo';
+      document.getElementById('detail-open-btn').classList.toggle('hidden', !hasLink);
       renderDetailList('detail-ingredients-section', 'detail-ingredients-list', isManual ? recipe.ingredients : null);
       renderDetailList('detail-instructions-section', 'detail-instructions-list', isManual ? recipe.instructions : null);
 
@@ -631,24 +737,125 @@
       }
     });
 
+    // --- full-screen photo viewer (pinch/pan zoom) -----------------------------
+    // The page's own viewport is locked (user-scalable=no) so the whole app
+    // feels like an app rather than a zoomable webpage - that means native
+    // pinch-zoom doesn't reach this image either, so zoom/pan is tracked by
+    // hand from pointer events and applied as a CSS transform. Built to read
+    // a photographed cookbook page, but works for any recipe photo.
+    (function setupPhotoViewer() {
+      const viewer = document.getElementById('photo-viewer');
+      const stage = document.getElementById('photo-viewer-stage');
+      const img = document.getElementById('photo-viewer-img');
+
+      const MIN_SCALE = 1;
+      const MAX_SCALE = 5;
+      let scale = 1, tx = 0, ty = 0;
+      const pointers = new Map();
+      let pinchStartDist = null;
+      let panStart = null; // { x, y, tx, ty } at gesture start
+      let lastTapTime = 0;
+
+      function apply() {
+        img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      }
+
+      function resetZoom() {
+        scale = 1; tx = 0; ty = 0;
+        apply();
+      }
+
+      function clampScale(s) {
+        return Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
+      }
+
+      function open(src) {
+        img.src = src;
+        resetZoom();
+        viewer.classList.add('active');
+      }
+      function close() {
+        viewer.classList.remove('active');
+        img.src = '';
+      }
+
+      document.getElementById('detail-photo-wrap').addEventListener('click', () => {
+        const src = document.getElementById('detail-photo').src;
+        if (src) open(src);
+      });
+      document.getElementById('photo-viewer-close').addEventListener('click', close);
+      viewer.addEventListener('click', e => { if (e.target === viewer) close(); });
+
+      function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+      stage.addEventListener('pointerdown', e => {
+        try { stage.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone - ignore */ }
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+          panStart = { x: e.clientX, y: e.clientY, tx, ty };
+        } else if (pointers.size === 2) {
+          panStart = null;
+          pinchStartDist = dist(...pointers.values());
+        }
+      });
+
+      stage.addEventListener('pointermove', e => {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pointers.size === 1 && panStart && scale > 1) {
+          tx = panStart.tx + (e.clientX - panStart.x);
+          ty = panStart.ty + (e.clientY - panStart.y);
+          apply();
+        } else if (pointers.size === 2 && pinchStartDist) {
+          const d = dist(...pointers.values());
+          scale = clampScale(scale * (d / pinchStartDist));
+          pinchStartDist = d;
+          apply();
+        }
+      });
+
+      function endPointer(e) {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) pinchStartDist = null;
+        if (pointers.size === 0) {
+          panStart = null;
+          if (scale <= 1) resetZoom();
+
+          // Double-tap to toggle zoom, once no fingers remain on screen.
+          const now = Date.now();
+          if (now - lastTapTime < 300) {
+            scale = scale > 1 ? 1 : 2.5;
+            tx = 0; ty = 0;
+            apply();
+          }
+          lastTapTime = now;
+        }
+      }
+      stage.addEventListener('pointerup', endPointer);
+      stage.addEventListener('pointercancel', endPointer);
+    })();
+
     // --- add recipe -----------------------------------------------------------
     document.getElementById('save-recipe-btn').addEventListener('click', async () => {
       const btn = document.getElementById('save-recipe-btn');
       const errorEl = document.getElementById('add-error');
-      const values = addMode === 'manual'
-        ? {
-            mode: 'manual',
-            name: document.getElementById('recipe-name').value,
-            category: categorySelect.value,
-            ingredients: collectDynamicValues('ingredients-list'),
-            instructions: collectDynamicValues('instructions-list')
-          }
-        : {
-            mode: 'link',
-            link: document.getElementById('recipe-link').value,
-            name: document.getElementById('recipe-name').value,
-            category: categorySelect.value
-          };
+      const name = document.getElementById('recipe-name').value;
+      const category = categorySelect.value;
+      let values;
+      if (addMode === 'manual') {
+        values = {
+          mode: 'manual',
+          name,
+          category,
+          ingredients: collectDynamicValues('ingredients-list'),
+          instructions: collectDynamicValues('instructions-list')
+        };
+      } else if (addMode === 'photo') {
+        values = { mode: 'photo', name, category };
+      } else {
+        values = { mode: 'link', link: document.getElementById('recipe-link').value, name, category };
+      }
       values.photo = selectedPhoto;
       errorEl.textContent = '';
       btn.disabled = true;
