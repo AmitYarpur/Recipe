@@ -82,10 +82,29 @@ function extractYouTubeId(url) {
 
 // Best-effort thumbnail lookup at add-time. YouTube thumbnails are derived
 // from the URL directly (no request needed). TikTok exposes a public oembed
-// endpoint that usually allows cross-origin reads and returns a thumbnail
-// URL. Instagram's oembed has required an authenticated app token since
-// 2020, so there is no reliable no-login way to fetch a thumbnail for it -
-// those recipes fall back to a plain platform badge in the UI.
+// endpoint that allows cross-origin reads and returns a thumbnail URL
+// directly. Instagram and Facebook's own oembed endpoints have required an
+// authenticated Meta app token since 2020, so there is no key-less way to
+// call them from the browser - those platforms (and TikTok, if its oembed
+// above didn't return anything) fall back to Microlink, a public
+// link-preview API that reads the page's og:image server-side and returns
+// it with CORS already enabled. That fallback is still best-effort - Meta
+// puts plenty of posts behind a login wall a scraper can't see past - so
+// recipes it can't find an image for just keep the plain platform badge.
+async function fetchOgImage(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.data?.image?.url || null;
+  } catch (e) {
+    return null; // offline / blocked / endpoint changed - fine, badge fallback covers it
+  }
+}
+
 export async function resolveThumbnail(url, platform) {
   if (platform === "youtube") {
     const id = extractYouTubeId(url);
@@ -97,12 +116,16 @@ export async function resolveThumbnail(url, platform) {
       const timer = setTimeout(() => controller.abort(), 5000);
       const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, { signal: controller.signal });
       clearTimeout(timer);
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.thumbnail_url || null;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.thumbnail_url) return data.thumbnail_url;
+      }
     } catch (e) {
-      return null; // offline / CORS blocked / endpoint changed - fine, badge fallback covers it
+      // offline / blocked / endpoint changed - fall through to the Microlink fallback below
     }
+  }
+  if (platform === "tiktok" || platform === "instagram" || platform === "facebook") {
+    return fetchOgImage(url);
   }
   return null;
 }

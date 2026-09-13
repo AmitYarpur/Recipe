@@ -10,6 +10,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Recipe">
+<!-- Several source sites (TikTok/Instagram/Facebook CDNs) reject hotlinked
+     thumbnails once they see a Referer from another site - suppressing it
+     lets those images load instead of breaking silently. -->
+<meta name="referrer" content="no-referrer">
 <title>Recipe</title>
 <script>
   if (localStorage.getItem('recipe_theme') === 'dark') {
