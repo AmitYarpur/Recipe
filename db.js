@@ -105,11 +105,78 @@ async function fetchOgImage(url) {
   }
 }
 
+// Facebook/Instagram/TikTok thumbnail URLs are signed CDN links that expire
+// after roughly a week - storing one directly means the recipe's picture
+// quietly dies and falls back to the plain platform badge once that
+// happens. Both CDNs serve the actual image bytes with CORS enabled though
+// (checked: Access-Control-Allow-Origin: * on the image response, distinct
+// from their oembed/page endpoints which don't allow it), so the image can
+// be downloaded client-side, re-compressed the same way manual recipe
+// photos are, and stored permanently as a data URL - no backend needed.
+// Kept small (well under photoDataUrl's budget) since a recipe can carry
+// both an uploaded photo and a fetched thumbnail at once, and both share
+// Firestore's 1MiB document cap.
+const MAX_THUMB_CHARS = 80000;
+
+function loadThumbImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("thumbnail image decode failed"));
+    img.src = dataUrl;
+  });
+}
+
+function drawResizedThumb(img, maxDim, quality) {
+  let { width, height } = img;
+  if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+  else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+// Best-effort: if the download/compress pipeline fails for any reason
+// (offline, timeout, a CDN that doesn't actually allow cross-origin reads),
+// the raw (eventually-expiring) URL is returned instead so the thumbnail at
+// least has a chance to show before it dies - same as before this existed.
+async function snapshotThumbnail(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return url;
+
+    const blob = await res.blob();
+    const rawDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("thumbnail read failed"));
+      reader.readAsDataURL(blob);
+    });
+    const img = await loadThumbImage(rawDataUrl);
+
+    const attempts = [[360, 0.5], [260, 0.4], [180, 0.35]];
+    for (const [maxDim, quality] of attempts) {
+      const out = drawResizedThumb(img, maxDim, quality);
+      if (out.length <= MAX_THUMB_CHARS) return out;
+    }
+    return url;
+  } catch (e) {
+    return url;
+  }
+}
+
 export async function resolveThumbnail(url, platform) {
   if (platform === "youtube") {
     const id = extractYouTubeId(url);
     return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
   }
+
+  let raw = null;
   if (platform === "tiktok") {
     try {
       const controller = new AbortController();
@@ -118,16 +185,18 @@ export async function resolveThumbnail(url, platform) {
       clearTimeout(timer);
       if (res.ok) {
         const data = await res.json();
-        if (data.thumbnail_url) return data.thumbnail_url;
+        if (data.thumbnail_url) raw = data.thumbnail_url;
       }
     } catch (e) {
       // offline / blocked / endpoint changed - fall through to the Microlink fallback below
     }
   }
-  if (platform === "tiktok" || platform === "instagram" || platform === "facebook") {
-    return fetchOgImage(url);
+  if (!raw && (platform === "tiktok" || platform === "instagram" || platform === "facebook")) {
+    raw = await fetchOgImage(url);
   }
-  return null;
+  if (!raw) return null;
+
+  return snapshotThumbnail(raw);
 }
 
 // --- Recipes collection, shared across every visitor (no login) -----------

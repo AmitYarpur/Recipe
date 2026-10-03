@@ -23,6 +23,14 @@ service cloud.firestore {
                         || request.resource.data.photoDataUrl == null
                         || (request.resource.data.photoDataUrl is string
                             && request.resource.data.photoDataUrl.size() < 900000))
+                    // thumbnailUrl is either a plain fetched link (short) or a
+                    // client-compressed data URL snapshot of one (see db.js's
+                    // snapshotThumbnail) - capped much smaller than the photo
+                    // above since a recipe can carry both at once.
+                    && (!('thumbnailUrl' in request.resource.data)
+                        || request.resource.data.thumbnailUrl == null
+                        || (request.resource.data.thumbnailUrl is string
+                            && request.resource.data.thumbnailUrl.size() < 120000))
                     && (
                       // Manual recipe: typed in by hand, no external link -
                       // needs its own ingredients/steps instead.
