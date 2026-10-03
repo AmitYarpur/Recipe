@@ -626,9 +626,23 @@
         thumb.className = 'recipe-thumb';
         const { src: thumbSrc, isVideoThumb } = pickDisplayImage(r);
         if (thumbSrc) {
-          thumb.style.backgroundImage = `url("${thumbSrc}")`;
+          const img = document.createElement('img');
+          img.className = 'thumb-img';
+          img.alt = '';
+          // Site-provided thumbnails (Instagram/Facebook) are signed CDN
+          // links that expire after a while - once that happens the request
+          // 403s, so fall back to the plain platform icon instead of
+          // leaving a blank box.
+          img.addEventListener('error', () => {
+            thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
+          });
+          img.src = thumbSrc;
+          thumb.appendChild(img);
           if (isVideoThumb) {
-            thumb.innerHTML = '<div class="play-badge"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></div>';
+            const badge = document.createElement('div');
+            badge.className = 'play-badge';
+            badge.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg>';
+            thumb.appendChild(badge);
           }
         } else if (r.platform === 'manual' || r.platform === 'photo') {
           thumb.innerHTML = PLATFORM_ICONS[r.platform] + `<span class="thumb-manual-label">${PLATFORM_LABELS[r.platform]}</span>`;
@@ -688,9 +702,13 @@
       const photoWrap = document.getElementById('detail-photo-wrap');
       const { src: detailImage } = pickDisplayImage(recipe);
       if (detailImage) {
+        // Same expiring-CDN-link risk as the list thumbnails - hide the
+        // photo section rather than show a broken-image icon.
+        photoEl.onerror = () => photoWrap.classList.add('hidden');
         photoEl.src = detailImage;
         photoWrap.classList.remove('hidden');
       } else {
+        photoEl.onerror = null;
         photoWrap.classList.add('hidden');
         photoEl.src = '';
       }
