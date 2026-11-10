@@ -307,6 +307,36 @@
       }
     }
 
+    // Opening the list (or any re-render) can find several broken/missing
+    // thumbnails at once - firing refreshThumbnail for all of them in the
+    // same instant is a burst of concurrent requests to Microlink, which
+    // rate-limits on its own short window regardless of the per-recipe
+    // cooldown above (seen in practice: several 429s in the same console
+    // flush). A single queue processed one at a time, spaced out, stays
+    // well under that.
+    const healQueue = [];
+    const queuedHealIds = new Set(); // re-renders (search keystrokes, filter chips) shouldn't queue the same recipe twice
+    let healQueueRunning = false;
+    function queueHeal(r, onDone) {
+      if (queuedHealIds.has(r.id)) return;
+      queuedHealIds.add(r.id);
+      healQueue.push({ r, onDone });
+      if (!healQueueRunning) runHealQueue();
+    }
+    async function runHealQueue() {
+      healQueueRunning = true;
+      while (healQueue.length) {
+        const { r, onDone } = healQueue.shift();
+        queuedHealIds.delete(r.id);
+        const attempted = canRetryNow(r.id); // only pace out actual network attempts, not cooldown skips
+        const fresh = await refreshThumbnail(r);
+        if (onDone) onDone(fresh);
+        else if (fresh) renderList();
+        if (healQueue.length && attempted) await new Promise(res => setTimeout(res, 3000));
+      }
+      healQueueRunning = false;
+    }
+
     let allRecipes = [];
     let currentCategory = 'הכל';
     let currentSearch = '';
@@ -679,7 +709,7 @@
           img.addEventListener('error', () => {
             if (!img.dataset.retried) {
               img.dataset.retried = '1';
-              refreshThumbnail(r).then(fresh => {
+              queueHeal(r, fresh => {
                 if (fresh) img.src = fresh;
                 else thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
               });
@@ -703,7 +733,7 @@
           // at add-time, e.g. a login-walled post) - try again in the
           // background (throttled) in case it works now, and swap the badge
           // for the real picture without the user having to do anything.
-          refreshThumbnail(r).then(fresh => { if (fresh) renderList(); });
+          queueHeal(r);
         }
 
         const info = document.createElement('div');
