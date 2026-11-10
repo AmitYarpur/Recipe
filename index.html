@@ -266,13 +266,36 @@
     }
 
     // Instagram/Facebook/TikTok thumbnails that are still a raw (not yet
-    // snapshotted) CDN link eventually expire and 403. Rather than give up
-    // and show the plain badge forever, re-resolve the thumbnail from the
-    // source link - resolveThumbnail snapshots it as a permanent data URL
-    // this time - and persist it so the fix sticks instead of re-expiring.
+    // snapshotted) CDN link eventually expire and 403, and some never got a
+    // thumbnail in the first place (the og-image lookup is itself best-effort
+    // - see fetchOgImage in db.js). Rather than give up and show the plain
+    // badge forever, re-resolve the thumbnail from the source link whenever
+    // one is missing or broken - resolveThumbnail snapshots it as a
+    // permanent data URL this time - and persist it so a success sticks.
+    //
+    // The og-image lookup goes through Microlink, a shared free API with a
+    // real daily rate limit (seen in practice: 429 Too Many Requests) - so
+    // retries are throttled per recipe instead of firing on every single
+    // page view/re-render, which would exhaust that shared quota for
+    // everyone almost immediately on a list with several broken thumbnails.
     const RETRIABLE_PLATFORMS = new Set(['instagram', 'facebook', 'tiktok']);
+    const RETRY_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6h
+    function retryKey(id) { return `recipe_thumb_retry_${id}`; }
+    function canRetryNow(id) {
+      try {
+        const last = Number(localStorage.getItem(retryKey(id)) || 0);
+        return Date.now() - last > RETRY_COOLDOWN_MS;
+      } catch (e) {
+        return true; // storage blocked (private mode etc.) - allow it, worst case a few extra calls
+      }
+    }
+    function markRetried(id) {
+      try { localStorage.setItem(retryKey(id), String(Date.now())); } catch (e) {}
+    }
     async function refreshThumbnail(r) {
       if (!r.link || !RETRIABLE_PLATFORMS.has(r.platform)) return null;
+      if (!canRetryNow(r.id)) return null;
+      markRetried(r.id);
       try {
         const fresh = await resolveThumbnail(r.link, r.platform);
         if (!fresh) return null;
@@ -676,6 +699,11 @@
           thumb.innerHTML = PLATFORM_ICONS[r.platform] + `<span class="thumb-manual-label">${PLATFORM_LABELS[r.platform]}</span>`;
         } else {
           thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
+          // No thumbnail was ever found for this one (og-image lookup failed
+          // at add-time, e.g. a login-walled post) - try again in the
+          // background (throttled) in case it works now, and swap the badge
+          // for the real picture without the user having to do anything.
+          refreshThumbnail(r).then(fresh => { if (fresh) renderList(); });
         }
 
         const info = document.createElement('div');
