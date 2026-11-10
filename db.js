@@ -330,3 +330,11 @@ export async function getRecipes() {
 export async function deleteRecipe(id) {
   await withTimeout(deleteDoc(doc(db, "recipes", id)), "recipe:delete");
 }
+
+// Persists a freshly re-resolved thumbnail without touching anything else on
+// the recipe. Used to self-heal recipes whose stored thumbnailUrl is a raw
+// (now-expired) CDN link - see the onerror retry in index.html - so the fix
+// sticks instead of re-breaking next time the signed link expires again.
+export async function patchThumbnailUrl(id, thumbnailUrl) {
+  await withTimeout(updateDoc(doc(db, "recipes", id), { thumbnailUrl }), "recipe:patchThumbnail");
+}

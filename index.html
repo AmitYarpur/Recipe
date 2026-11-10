@@ -240,7 +240,7 @@
   <div class="toast" id="toast"></div>
 
   <script type="module">
-    import { CATEGORIES, addRecipe, updateRecipe, getRecipes, deleteRecipe } from './db.js';
+    import { CATEGORIES, addRecipe, updateRecipe, getRecipes, deleteRecipe, resolveThumbnail, patchThumbnailUrl } from './db.js';
 
     const PLATFORM_LABELS = { youtube: 'יוטיוב', instagram: 'אינסטגרם', tiktok: 'טיקטוק', facebook: 'פייסבוק', other: 'קישור', manual: 'הוספה ידנית', photo: 'מתכון מצולם' };
 
@@ -263,6 +263,25 @@
       if (r.thumbnailUrl) return { src: r.thumbnailUrl, isVideoThumb: true };
       if (r.photoDataUrl) return { src: r.photoDataUrl, isVideoThumb: false };
       return { src: null, isVideoThumb: false };
+    }
+
+    // Instagram/Facebook/TikTok thumbnails that are still a raw (not yet
+    // snapshotted) CDN link eventually expire and 403. Rather than give up
+    // and show the plain badge forever, re-resolve the thumbnail from the
+    // source link - resolveThumbnail snapshots it as a permanent data URL
+    // this time - and persist it so the fix sticks instead of re-expiring.
+    const RETRIABLE_PLATFORMS = new Set(['instagram', 'facebook', 'tiktok']);
+    async function refreshThumbnail(r) {
+      if (!r.link || !RETRIABLE_PLATFORMS.has(r.platform)) return null;
+      try {
+        const fresh = await resolveThumbnail(r.link, r.platform);
+        if (!fresh) return null;
+        r.thumbnailUrl = fresh;
+        patchThumbnailUrl(r.id, fresh).catch(() => {}); // best-effort persist; UI already has it
+        return fresh;
+      } catch (e) {
+        return null;
+      }
     }
 
     let allRecipes = [];
@@ -629,11 +648,20 @@
           const img = document.createElement('img');
           img.className = 'thumb-img';
           img.alt = '';
-          // Site-provided thumbnails (Instagram/Facebook) are signed CDN
-          // links that expire after a while - once that happens the request
-          // 403s, so fall back to the plain platform icon instead of
-          // leaving a blank box.
+          // Site-provided thumbnails (Instagram/Facebook/TikTok) are signed
+          // CDN links that expire after a while - once that happens the
+          // request 403s. Try once to re-fetch a fresh (and this time
+          // permanent) thumbnail from the source link before giving up and
+          // falling back to the plain platform icon.
           img.addEventListener('error', () => {
+            if (!img.dataset.retried) {
+              img.dataset.retried = '1';
+              refreshThumbnail(r).then(fresh => {
+                if (fresh) img.src = fresh;
+                else thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
+              });
+              return;
+            }
             thumb.innerHTML = PLATFORM_ICONS[r.platform] || PLATFORM_ICONS.other;
           });
           img.src = thumbSrc;
@@ -702,9 +730,21 @@
       const photoWrap = document.getElementById('detail-photo-wrap');
       const { src: detailImage } = pickDisplayImage(recipe);
       if (detailImage) {
-        // Same expiring-CDN-link risk as the list thumbnails - hide the
-        // photo section rather than show a broken-image icon.
-        photoEl.onerror = () => photoWrap.classList.add('hidden');
+        // Same expiring-CDN-link risk as the list thumbnails - try the same
+        // self-healing re-fetch once before giving up and hiding the photo
+        // section.
+        delete photoEl.dataset.retried;
+        photoEl.onerror = () => {
+          if (!photoEl.dataset.retried) {
+            photoEl.dataset.retried = '1';
+            refreshThumbnail(recipe).then(fresh => {
+              if (fresh) photoEl.src = fresh;
+              else photoWrap.classList.add('hidden');
+            });
+            return;
+          }
+          photoWrap.classList.add('hidden');
+        };
         photoEl.src = detailImage;
         photoWrap.classList.remove('hidden');
       } else {
